@@ -5,12 +5,6 @@
 <head>
     <meta charset="utf-8">
     <title>你好鸭，这里是Seimo!</title>
-    <!--Import Google Icon Font-->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!--Import materialize.css-->
-    <link type="text/css" rel="stylesheet" href="css/materialize.min.css" media="screen,projection" />
-
-    <!--Let browser know website is optimized for mobile-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
@@ -18,48 +12,38 @@
     <style>
         body,
         html {
+            background-image: url("images/bkgrd.jpg");
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: pink;
+            place-items: center;
+
         }
 
-        .center {
-            background-color: pink;
+        .glass-container {
+            width: 80%;
+            height: 80%;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 30px 30px 30px 30px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); 
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 可选的样式，设置容器的高度和宽度以适应需要 */
-
-        }
-
-        .row,
-        center {
             margin: 0 auto;
-            height: 60%;
-            width: 80%;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 0, 0);
+            top: 10vh; 
+ 
         }
     </style>
-    <h1 style="text-align: center;color: white;">This is Seimo</h1>
-    <div class="center">
-        <div class="container">
-            <div class="row">
-                <div class="card">
-                    <div class="card-image">
-                        <img src="images/bkgrd.jpg">
-                        <span class="card-title">Seimo</span>
-                    </div>
-                    <div class="card-content">
-                        <p>你好啊，我是Seimo</p>
-                    </div>
-                    <div class="card-action">
-                        <a href="#">This is a link</a>
-                    </div>./
-                </div>
-            </div>
-        </div>
-    </div>
 
+    <div class="glass-container">
+
+    </div>
 </body>
 
 </html>
