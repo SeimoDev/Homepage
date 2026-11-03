@@ -322,7 +322,13 @@ main { position: relative; z-index: 2; }
   padding-block: clamp(28px, 4vh, 56px);
 }
 
-.hero__copy { max-width: 620px; }
+/* z-index only applies to positioned boxes — without `relative` the copy
+   sat at the same level as the artwork and could be painted under it. */
+.hero__copy {
+  position: relative;
+  z-index: 3;
+  max-width: 620px;
+}
 
 .hero__role {
   display: inline-flex;
@@ -553,7 +559,13 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
 /* ══════════════════════════════════════════════════════════════
    Section heads
    ══════════════════════════════════════════════════════════════ */
+/* Sits above every artwork layer in its section. The art figures use
+   `will-change: transform`, which promotes them into their own stacking
+   context; without an explicit z-index here the later-painted figure (and
+   its background disc) covers the heading at narrow widths. */
 .sec-head {
+  position: relative;
+  z-index: 5;
   display: grid;
   gap: clamp(16px, 2.4vw, 28px);
   margin-bottom: clamp(40px, 6.4vw, 88px);
@@ -637,7 +649,13 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
   gap: clamp(32px, 5.4vw, 88px);
   align-items: start;
 }
-.work__col { display: grid; gap: clamp(16px, 2.2vw, 24px); max-width: 540px; }
+.work__col {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: clamp(16px, 2.2vw, 24px);
+  max-width: 540px;
+}
 .work__body {
   font-size: clamp(15px, 1.26vw, 18px);
   line-height: 1.8;
@@ -703,11 +721,14 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
   will-change: transform;
   isolation: isolate;
 }
+/* Height-driven so the disc can never outgrow the (short, wide) figure box
+   at narrow widths and bleed up over the section heading. */
 .work__art::before {
   content: '';
   position: absolute;
   left: 50%; bottom: 14%;
-  width: 66%;
+  height: 84%;
+  width: auto;
   aspect-ratio: 1;
   transform: translateX(-50%);
   border-radius: 50%;
@@ -1110,9 +1131,15 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
   background: var(--paper-2);
   border-radius: 0 0 19px 19px;
 }
-.lifecard__title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
-.lifecard__name { font-size: clamp(17px, 1.65vw, 21px); font-weight: var(--w-semi); letter-spacing: -0.025em; }
+.lifecard__title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+.lifecard__name { font-size: clamp(17px, 1.65vw, 21px); font-weight: var(--w-semi); letter-spacing: -0.025em; text-wrap: balance; }
 .lifecard__en { color: var(--ink-4); flex: none; }
+/* narrow cards: let the English label drop under the title instead of
+   squeezing the Chinese name into a vertical column */
+@media (max-width: 1024px) {
+  .lifecard__title-row { gap: 2px; }
+  .lifecard__en { flex-basis: 100%; }
+}
 .lifecard__body {
   font-size: 13.5px;
   line-height: 1.72;
@@ -1143,7 +1170,12 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
   align-items: center;
   margin-bottom: clamp(40px, 5.6vw, 76px);
 }
-.contact__copy { display: grid; gap: clamp(16px, 2.2vw, 24px); }
+.contact__copy {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: clamp(16px, 2.2vw, 24px);
+}
 .contact__title {
   font-size: clamp(36px, 5.2vw, 82px);
   line-height: 1.03;
@@ -1251,30 +1283,41 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════════════════════════════ */
+/* ── Narrow laptops / tablets ───────────────────────────────── */
 @media (max-width: 1180px) {
   .layer { grid-template-columns: 46px minmax(150px, 0.9fr) minmax(0, 1.4fr); row-gap: 16px; }
   .layer__items { grid-column: 2 / -1; justify-content: flex-start; }
 }
 
-@media (max-width: 1024px) {
-  .nav__links { display: none; }
-  .burger { display: inline-block; }
-  .nav__inner { justify-content: flex-end; }
-  .nav__right { gap: 10px; }
+/* Short viewports (1024×700, 1280×720): tighten the hero so the figure
+   still lands inside the first screen instead of being pushed below it. */
+@media (min-width: 861px) and (max-height: 800px) {
+  .hero { min-height: 100svh; padding-top: 74px; }
+  .hero__inner { padding-block: clamp(12px, 2vh, 28px); }
+  .hero__role { margin-bottom: 14px; }
+  .hero__title { font-size: clamp(40px, 5.2vw, 72px); margin-bottom: 16px; }
+  .hero__sub { font-size: 14.5px; line-height: 1.66; margin-bottom: 20px; }
+  .hero__actions { gap: 16px; }
+  .socials { margin-top: 18px; }
+  .hero__art { height: clamp(300px, 60svh, 470px); }
+  .hero__foot { padding-bottom: 14px; }
+  .hero__motto { font-size: 15px; max-width: 30ch; }
+}
 
-  .hero__inner { grid-template-columns: 1fr; gap: 0; }
-  .hero__art { justify-self: center; height: clamp(300px, 44svh, 420px); margin-top: -2vh; order: 2; }
-  .hero__copy { order: 1; z-index: 3; }
-  .hero__title { font-size: clamp(40px, 10vw, 72px); }
-  .hero { min-height: auto; padding-bottom: 32px; }
-  .hero__foot { margin-top: 20px; }
+/* Keep the two-column hero down to 861px; stacking earlier made the
+   copy very tall and squeezed the artwork out of view. */
+@media (max-width: 1024px) {
+  .hero__inner { gap: clamp(18px, 2.6vw, 34px); }
+  .hero__copy { max-width: none; }
+  .hero__title { font-size: clamp(38px, 5.6vw, 66px); }
+  .hero__art { justify-self: center; height: clamp(300px, 58svh, 500px); }
 
   .work__grid { grid-template-columns: 1fr; }
   .work__art { justify-self: center; height: clamp(280px, 48vw, 400px); width: 100%; order: -1; }
   .work__col { max-width: none; }
 
   .contact__grid { grid-template-columns: 1fr; }
-  .contact__art { height: clamp(260px, 40vw, 340px); order: -1; justify-self: start; }
+  .contact__art { height: clamp(260px, 34vw, 340px); order: -1; justify-self: start; }
 
   .stack .sec-head--split { grid-template-columns: 1fr; }
   .sec-lead { justify-self: start; text-align: left; }
@@ -1284,6 +1327,29 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
 }
 
 @media (max-width: 860px) {
+  .nav__links { display: none; }
+  .burger { display: inline-block; }
+  .nav__inner { justify-content: flex-end; }
+  .nav__right { gap: 10px; }
+
+  .hero__inner { grid-template-columns: 1fr; gap: 0; }
+  .hero__art { justify-self: center; height: clamp(300px, 46svh, 420px); margin-top: -1vh; order: 2; }
+  .hero__copy { order: 1; z-index: 3; }
+  .hero__title { font-size: clamp(40px, 9vw, 66px); }
+  .hero { min-height: auto; padding-bottom: 32px; }
+  .hero__foot { margin-top: 20px; }
+
+  /* tablets in portrait have vertical room — let the figure use it */
+  @media (min-width: 641px) {
+    .hero__art { height: clamp(420px, 58svh, 640px); margin-top: 0; }
+    .hero__title { font-size: clamp(48px, 7vw, 76px); }
+    .hero__sub { font-size: 16px; max-width: 46ch; }
+    .social { width: 42px; height: 42px; }
+    /* three portrait cards stay side by side; full-width cards were
+       over 1000px tall here */
+    .lifecard--tall, .lifecard--wide, .lifecard--std { grid-column: span 4; }
+  }
+
   .steps { grid-template-columns: 1fr; }
   .step__arrow { display: none; }
 
@@ -1300,40 +1366,74 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
 }
 
 @media (max-width: 640px) {
-  :root { --gut: 20px; }
+  :root { --gut: 18px; }
 
-  .hero__inner { padding-block: 18px 0; }
+  .hero__inner { padding-block: 16px 0; }
   .hero__role { font-size: 10px; padding: 6px 12px 6px 10px; }
   .hero__title { font-size: clamp(38px, 11vw, 54px); }
-  .hero__sub { font-size: 14px; }
-  .hero__art { height: clamp(260px, 42svh, 360px); }
+  .hero__sub { font-size: 14.5px; line-height: 1.7; }
+  /* the figure is the anchor of this layout — keep it tall enough to read.
+     Height drives width via aspect-ratio; setting width instead would make
+     a ~1000px tall element and clip the head against the fold. */
+  .hero__art {
+    height: clamp(300px, 54svh, 420px);
+    width: auto;
+    margin-top: 4px;
+  }
   .hero__artmeta { display: none; }
-  .hero__foot { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .hero__foot { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .hero__motto { font-size: 15px; max-width: 26ch; }
   .hero__coords { width: 100%; justify-content: space-between; }
 
+  /* comfortable tap targets */
+  .social { width: 44px; height: 44px; }
+  .socials { gap: 10px; margin-top: 20px; }
+  .burger, .lang__btn { min-height: 44px; }
+  .lang__btn { padding: 0 14px; }
+  .burger { width: 44px; height: 44px; }
+  .burger span:nth-child(1) { top: 18.5px; }
+  .burger span:nth-child(2) { top: 24.5px; }
+  .burger.is-open span:nth-child(1),
+  .burger.is-open span:nth-child(2) { top: 21.5px; }
+  .foot__top { min-height: 44px; padding-block: 10px; }
+
+  /* body copy: 15px floor reads better than 13.5px on a phone */
+  .work__body,
+  .entry__text { font-size: 15px; line-height: 1.75; }
+  .layer__desc { font-size: 14.5px; line-height: 1.7; }
+  .step__body,
+  .lifecard__body { font-size: 14px; line-height: 1.7; }
+  .card__note { font-size: 13.5px; }
+  .layer__items li,
+  .entry__meta li,
+  .lifecard__meta li { font-size: 11.5px; padding: 4px 9px; }
+  .tag { font-size: 12px; padding: 7px 13px; }
+  .langs__list li { font-size: 14px; padding: 10px 16px; }
+  .link__value { font-size: 13px; }
+
   .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+  .fact dd { font-size: 15px; }
 
   .intro__quote { font-size: clamp(22px, 6.4vw, 31px); line-height: 1.46; }
   .sec-title { font-size: clamp(27px, 8.2vw, 39px); }
+  .sec-lead { font-size: 16px; }
 
   .lifecard--tall, .lifecard--wide, .lifecard--std { grid-column: span 12; }
   .lifecard--tall { grid-row: auto; }
-  .lifecard__media,
-  .lifecard--wide .lifecard__media { min-height: 300px; }
-  .lifecard--tall .lifecard__media { min-height: 380px; }
-  .lifecard__figure img { height: 92%; }
+  .lifecard__media { min-height: 0; }
+  .lifecard__figure img { height: 94%; }
 
-  .link { grid-template-columns: 24px 1fr 20px; row-gap: 4px; }
+  .link { grid-template-columns: 24px 1fr 20px; row-gap: 3px; padding-block: 16px; }
   .link__value { grid-column: 2 / -1; justify-self: start; text-align: left; }
   .link__arrow { grid-column: 3; grid-row: 1; }
 
   .motto { justify-items: start; text-align: left; }
 
-  .foot { gap: 12px; }
+  .foot { gap: 10px; }
   .foot__mid { order: 3; width: 100%; }
 }
 
 @media (max-width: 420px) {
   .hero__title { font-size: 35px; }
-  .tag { font-size: 10.5px; padding: 5px 10px; }
+  .tag { font-size: 11.5px; padding: 6px 11px; }
 }
