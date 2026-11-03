@@ -1,0 +1,22 @@
+{
+  "name": "seimo-home",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Seimo — personal landing page",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "framer-motion": "^14.9.0",
+    "lenis": "^1.3.27",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.2.1",
+    "vite": "^8.3.5"
+  }
+}
