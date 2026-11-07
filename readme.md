@@ -106,6 +106,14 @@ GitHub 限流或网络失败时保留已有资料；新仓库没有缓存时仍�
 
 ---
 
+## 链接分享卡片
+
+`index.html` 中直接提供 Open Graph、Twitter Card 和 canonical 信息，平台无需执行 JavaScript 即可读取标题、简介与图片。X/Twitter 使用 `summary` 摘要卡片，头像为 `public/media/social-avatar.jpg`，图片地址使用 `https://seimo.cn/` 下的绝对 URL。
+
+修改分享文案或图片时同步更新这些标签；`og:image:width`、`og:image:height` 和图片类型应与文件一致。`public/robots.txt` 允许公开页面和图片被抓取。
+
+---
+
 ## 多语言
 
 - 首次访问按 `navigator.languages` 探测，繁体靠 `hant` / `tw` / `hk` / `mo` 判断
