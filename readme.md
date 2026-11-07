@@ -50,6 +50,7 @@ src/
 │   ├── Hero.jsx           首屏：标题逐字入场、人物、快捷联系图标
 │   ├── Intro.jsx          一句话介绍，逐字随滚动点亮
 │   ├── Work.jsx           我在做什么 + 坐姿人物 + 背景 marquee 文字带
+│   ├── GitHubProjects.jsx  GitHub 最新公开仓库横向轮播
 │   ├── Stack.jsx          四层技术版图 + 语言列表
 │   ├── Path.jsx           经历时间线
 │   ├── Method.jsx         方法论三步
@@ -58,6 +59,8 @@ src/
 │   ├── ImpactTitle.jsx    区块标题：进入视口时缩放冲击 + 字重收紧
 │   ├── ScrollZoom.jsx     通用滚动缩放容器
 │   └── Reveal.jsx         入场淡入上浮 / 逐行遮罩
+├── lib/
+│   └── github.js          组织所有者识别、仓库聚合与缓存
 └── styles/
     ├── base.css           颜色、字重、缓动、间距等 token
     └── sections.css       各区块版式与响应式断点
@@ -72,6 +75,14 @@ src/
 **换人物图**：放到 `public/media/`，文件名对应 `content.js` 里 `life.cards[].img`。图片要求透明底的 WebP。
 
 **改配色**：`src/styles/base.css` 顶部的 `:root` 里有全部颜色变量，包括四种卡片底色（`--lav-wash` / `--sand-wash` / `--mint-wash` / `--red-wash`）。
+
+### GitHub 最近的项目
+
+项目卡片直接从 GitHub 公开 REST API 读取 `SeimoDev` 的个人仓库和所拥有组织的公开仓库，合并去重后按最近推送时间（`pushed_at`）降序展示前 5 个，包括公开的 Fork。组织通过公开成员关系发现，再核对 `admin`（所有者）角色，普通成员所在的组织不会纳入。
+
+配置位于 `src/lib/github.js`：`GITHUB_USERNAME` 为个人账号；若组织成员关系隐藏，可把已拥有的组织名补充到 `GITHUB_OWNED_ORGANIZATIONS`。公开接口无法自动发现隐藏的组织成员关系。
+
+浏览器缓存 15 分钟，接口失败时保留已有卡片并提供重试。无需 Token 或后端；首次访问遇到 GitHub 限流且没有缓存时会显示错误提示。卡片每 5 秒自动横向切换，支持左右按钮和触摸滑动，鼠标悬停、键盘聚焦或离开视口时暂停，开启减少动态效果时关闭自动播放。
 
 ---
 

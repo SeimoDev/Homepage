@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform, useSpring, useReducedMotion } from 'fr
 import { useLang } from '../i18n';
 import { Reveal } from './Reveal';
 import ImpactTitle from './ImpactTitle';
+import GitHubProjects from './GitHubProjects';
 
 export default function Work() {
   const { t } = useLang();
@@ -44,22 +45,7 @@ export default function Work() {
             </Reveal>
 
             <Reveal className="work__card" delay={260}>
-              <div className="card">
-                <div className="card__top">
-                  <span className="card__label eyebrow">
-                    <span className="pulse" aria-hidden="true" />
-                    {t.work.cardLabel}
-                  </span>
-                  <span className="card__meta eyebrow">nabu / sm8150</span>
-                </div>
-                <h3 className="card__title">{t.work.cardTitle}</h3>
-                <p className="card__sub">{t.work.cardMeta}</p>
-                <div className="card__bar" aria-hidden="true">
-                  <span />
-                </div>
-                <p className="card__note">{t.work.cardNote}</p>
-                <span className="card__glow" aria-hidden="true" />
-              </div>
+              <GitHubProjects />
             </Reveal>
           </div>
 

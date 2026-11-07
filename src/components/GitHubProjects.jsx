@@ -1,0 +1,141 @@
+import { useEffect, useRef, useState } from 'react';
+import { useInView } from 'framer-motion';
+import { useLang } from '../i18n';
+import { GITHUB_USERNAME, loadLatestRepositories, readRepositoryCache } from '../lib/github';
+import { useMediaQuery } from './Reveal';
+
+export default function GitHubProjects() {
+  const { lang, t } = useLang();
+  const copy = t.work.repositories;
+  const [repositories, setRepositories] = useState(() => readRepositoryCache()?.repositories || []);
+  const [status, setStatus] = useState('loading');
+  const [attempt, setAttempt] = useState(0);
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const region = useRef(null);
+  const track = useRef(null);
+  const visible = useInView(region, { amount: 0.25 });
+  const reduce = useMediaQuery('(prefers-reduced-motion: reduce)');
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    loadLatestRepositories(attempt > 0).then((items) => {
+      if (cancelled) return;
+      setRepositories(items);
+      setActive(0);
+      if (track.current) track.current.scrollLeft = 0;
+      setStatus('ready');
+    }).catch(() => {
+      if (!cancelled) setStatus('error');
+    });
+    return () => { cancelled = true; };
+  }, [attempt]);
+
+  function scrollTo(index) {
+    const el = track.current;
+    if (!el?.children[index]) return;
+    el.scrollTo({
+      left: el.children[index].offsetLeft - el.children[0].offsetLeft,
+      behavior: reduce ? 'instant' : 'smooth',
+    });
+  }
+
+  useEffect(() => {
+    if (reduce || paused || hovered || focused || !visible || repositories.length < 2) return;
+    const timer = setInterval(() => {
+      if (!document.hidden) scrollTo((active + 1) % repositories.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [active, repositories.length, reduce, paused, hovered, focused, visible]);
+
+  function syncActive() {
+    const el = track.current;
+    if (!el?.children.length) return;
+    const first = el.children[0].offsetLeft;
+    let closest = 0;
+    for (let i = 1; i < el.children.length; i += 1) {
+      if (Math.abs(el.children[i].offsetLeft - first - el.scrollLeft) <
+          Math.abs(el.children[closest].offsetLeft - first - el.scrollLeft)) closest = i;
+    }
+    setActive(closest);
+  }
+
+  return (
+    <div
+      className="repos"
+      ref={region}
+      role="region"
+      aria-labelledby="repos-title"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+      }}
+    >
+      <div className="repos__head">
+        <h3 className="repos__label eyebrow" id="repos-title">
+          <span className="pulse" aria-hidden="true" />
+          {t.work.cardLabel}
+        </h3>
+        <a className="repos__source" href={`https://github.com/${GITHUB_USERNAME}?tab=repositories`} target="_blank" rel="noopener noreferrer">
+          GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+      <p className="repos__hint">{copy.hint}</p>
+
+      <div className={`repos__status${repositories.length === 0 ? ' repos__status--empty' : ''}`} role="status" aria-live="polite">
+        {status === 'loading' && repositories.length === 0 && <p>{copy.loading}</p>}
+        {status === 'error' && (
+          <p>{copy.error} <button type="button" onClick={() => setAttempt((value) => value + 1)}>{copy.retry}</button></p>
+        )}
+        {status === 'ready' && repositories.length === 0 && <p>{copy.empty}</p>}
+      </div>
+
+      {repositories.length > 0 && (
+        <>
+          <div className="repos__track" id="repos-track" ref={track} role="list" onScroll={syncActive} data-lenis-prevent>
+            {repositories.map((repo) => (
+              <article className="repo-card" role="listitem" key={repo.id}>
+                <a className="repo-card__link" href={repo.url} target="_blank" rel="noopener noreferrer">
+                  <div className="repo-card__top">
+                    <span className="repo-card__owner">{repo.owner}</span>
+                    <span className="repo-card__kind">{repo.organization ? copy.organization : copy.personal}</span>
+                  </div>
+                  <h4 className="repo-card__title">{repo.name}<span aria-hidden="true">↗</span></h4>
+                  <p className="repo-card__description">{repo.description || copy.noDescription}</p>
+                  <div className="repo-card__meta">
+                    {repo.language && <span className="repo-card__language"><i aria-hidden="true" />{repo.language}</span>}
+                    <span aria-label={`${copy.stars}: ${repo.stars}`}><span aria-hidden="true">☆ </span>{repo.stars.toLocaleString(lang)}</span>
+                    <time dateTime={repo.pushedAt} title={copy.updated}>
+                      {new Date(repo.pushedAt).toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </time>
+                  </div>
+                </a>
+              </article>
+            ))}
+          </div>
+          <div className="repos__controls">
+            <span className="repos__count" aria-live="off">{String(active + 1).padStart(2, '0')} <span>/ {String(repositories.length).padStart(2, '0')}</span></span>
+            <div className="repos__buttons">
+              {!reduce && repositories.length > 1 && (
+                <button type="button" className="repos__control" aria-label={paused ? copy.play : copy.pause} aria-controls="repos-track" onClick={() => setPaused((value) => !value)}>
+                  <span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>
+                </button>
+              )}
+              <button type="button" className="repos__control" aria-label={copy.previous} aria-controls="repos-track" disabled={repositories.length < 2} onClick={() => scrollTo((active - 1 + repositories.length) % repositories.length)}>
+                <span aria-hidden="true">←</span>
+              </button>
+              <button type="button" className="repos__control" aria-label={copy.next} aria-controls="repos-track" disabled={repositories.length < 2} onClick={() => scrollTo((active + 1) % repositories.length)}>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
