@@ -6,8 +6,9 @@
   "description": "Seimo — personal landing page",
   "scripts": {
     "dev": "vite",
-    "test": "node --test src/lib/*.test.js server/*.test.js",
-    "build": "vite build",
+    "test": "node --test src/lib/*.test.js scripts/*.test.mjs",
+    "sync:projects": "node scripts/update-projects.mjs",
+    "build": "node scripts/update-projects.mjs && vite build",
     "preview": "vite preview --port 4173"
   },
   "dependencies": {

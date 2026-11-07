@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useInView } from 'framer-motion';
 import { useLang } from '../i18n';
-import { GITHUB_USERNAME, loadLatestRepositories, readRepositoryCache } from '../lib/github';
+import projectConfig from '../../projects.config.json';
+import projectData from '../data/projects.json';
+import { selectProjects } from '../lib/projects';
 import { useMediaQuery } from './Reveal';
+
+const repositories = selectProjects(projectConfig.repositories, projectData.repositories);
 
 export default function GitHubProjects() {
   const { lang, t } = useLang();
   const copy = t.work.repositories;
-  const [repositories, setRepositories] = useState(() => readRepositoryCache()?.repositories || []);
-  const [status, setStatus] = useState('loading');
-  const [errorCode, setErrorCode] = useState(null);
-  const [attempt, setAttempt] = useState(0);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -19,24 +19,6 @@ export default function GitHubProjects() {
   const track = useRef(null);
   const visible = useInView(region, { amount: 0.25 });
   const reduce = useMediaQuery('(prefers-reduced-motion: reduce)');
-
-  useEffect(() => {
-    let cancelled = false;
-    setStatus('loading');
-    loadLatestRepositories(attempt > 0).then((items) => {
-      if (cancelled) return;
-      setRepositories(items);
-      setActive(0);
-      if (track.current) track.current.scrollLeft = 0;
-      setStatus('ready');
-    }).catch((error) => {
-      if (!cancelled) {
-        setErrorCode(error.code);
-        setStatus('error');
-      }
-    });
-    return () => { cancelled = true; };
-  }, [attempt]);
 
   function scrollTo(index) {
     const el = track.current;
@@ -85,24 +67,13 @@ export default function GitHubProjects() {
           <span className="pulse" aria-hidden="true" />
           {t.work.cardLabel}
         </h3>
-        <a className="repos__source" href={`https://github.com/${GITHUB_USERNAME}?tab=repositories`} target="_blank" rel="noopener noreferrer">
+        <a className="repos__source" href={projectConfig.githubUrl} target="_blank" rel="noopener noreferrer">
           GitHub <span aria-hidden="true">↗</span>
         </a>
       </div>
       <p className="repos__hint">{copy.hint}</p>
 
-      <div className={`repos__status${repositories.length === 0 ? ' repos__status--empty' : ''}`} role="status" aria-live="polite">
-        {status === 'loading' && repositories.length === 0 && <p>{copy.loading}</p>}
-        {status === 'error' && (
-          <p>
-            {errorCode === 'GITHUB_RATE_LIMITED' ? copy.rateLimit
-              : errorCode === 'ENDPOINT_UNAVAILABLE' ? copy.serviceUnavailable
-                : errorCode === 'NETWORK_ERROR' ? copy.networkError : copy.error}{' '}
-            <button type="button" onClick={() => setAttempt((value) => value + 1)}>{copy.retry}</button>
-          </p>
-        )}
-        {status === 'ready' && repositories.length === 0 && <p>{copy.empty}</p>}
-      </div>
+      {repositories.length === 0 && <p className="repos__status repos__status--empty">{copy.empty}</p>}
 
       {repositories.length > 0 && (
         <>
@@ -112,16 +83,16 @@ export default function GitHubProjects() {
                 <a className="repo-card__link" href={repo.url} target="_blank" rel="noopener noreferrer">
                   <div className="repo-card__top">
                     <span className="repo-card__owner">{repo.owner}</span>
-                    <span className="repo-card__kind">{repo.organization ? copy.organization : copy.personal}</span>
+                    {typeof repo.organization === 'boolean' && <span className="repo-card__kind">{repo.organization ? copy.organization : copy.personal}</span>}
                   </div>
                   <h4 className="repo-card__title">{repo.name}<span aria-hidden="true">↗</span></h4>
-                  <p className="repo-card__description">{repo.description || copy.noDescription}</p>
+                  <p className="repo-card__description">{repo.description || (repo.metadataUnavailable ? copy.viewRepository : copy.noDescription)}</p>
                   <div className="repo-card__meta">
                     {repo.language && <span className="repo-card__language"><i aria-hidden="true" />{repo.language}</span>}
-                    <span aria-label={`${copy.stars}: ${repo.stars}`}><span aria-hidden="true">☆ </span>{repo.stars.toLocaleString(lang)}</span>
-                    <time dateTime={repo.pushedAt} title={copy.updated}>
+                    {Number.isFinite(repo.stars) && <span aria-label={`${copy.stars}: ${repo.stars}`}><span aria-hidden="true">☆ </span>{repo.stars.toLocaleString(lang)}</span>}
+                    {repo.pushedAt && <time dateTime={repo.pushedAt} title={copy.updated}>
                       {new Date(repo.pushedAt).toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </time>
+                    </time>}
                   </div>
                 </a>
               </article>

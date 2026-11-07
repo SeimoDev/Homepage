@@ -1,0 +1,70 @@
+{
+  "updatedAt": 1794055232025,
+  "repositories": [
+    {
+      "id": 657445004,
+      "name": "Homepage",
+      "owner": "SeimoDev",
+      "organization": false,
+      "url": "https://github.com/SeimoDev/Homepage",
+      "sourceUrl": "https://github.com/SeimoDev/Homepage",
+      "description": "Seimo个人主页网站源码",
+      "language": "JavaScript",
+      "stars": 5,
+      "pushedAt": "2026-11-07T12:29:52Z",
+      "fetchedAt": 1794055231818
+    },
+    {
+      "id": 1329599417,
+      "name": "multica",
+      "owner": "SeimoDev",
+      "organization": false,
+      "url": "https://github.com/SeimoDev/multica",
+      "sourceUrl": "https://github.com/SeimoDev/multica",
+      "description": "Assign issues to Claude Code, Codex, Cursor, and 17 more coding agents like teammates — open-source and self-hostable.",
+      "language": "Go",
+      "stars": 0,
+      "pushedAt": "2026-10-30T11:58:42Z",
+      "fetchedAt": 1794055232011
+    },
+    {
+      "id": 1425616678,
+      "name": "xjq",
+      "owner": "SeimoDev",
+      "organization": false,
+      "url": "https://github.com/SeimoDev/xjq",
+      "sourceUrl": "https://github.com/SeimoDev/xjq",
+      "description": null,
+      "language": "C",
+      "stars": 0,
+      "pushedAt": "2026-10-21T12:24:31Z",
+      "fetchedAt": 1794055231975
+    },
+    {
+      "id": 545897646,
+      "name": "SeimoDev",
+      "owner": "SeimoDev",
+      "organization": false,
+      "url": "https://github.com/SeimoDev/SeimoDev",
+      "sourceUrl": "https://github.com/SeimoDev/SeimoDev",
+      "description": null,
+      "language": null,
+      "stars": 0,
+      "pushedAt": "2026-10-08T18:06:24Z",
+      "fetchedAt": 1794055231976
+    },
+    {
+      "id": 1410502220,
+      "name": "gitea",
+      "owner": "SeimoDev",
+      "organization": false,
+      "url": "https://github.com/SeimoDev/gitea",
+      "sourceUrl": "https://github.com/SeimoDev/gitea",
+      "description": "Git with a cup of tea! Painless self-hosted all-in-one software development service, including Git hosting, code review, team collaboration, package registry and CI/CD",
+      "language": null,
+      "stars": 0,
+      "pushedAt": "2026-10-08T13:57:38Z",
+      "fetchedAt": 1794055232025
+    }
+  ]
+}

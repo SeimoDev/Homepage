@@ -682,7 +682,6 @@ body[data-lang='ja'] .hero__line--accent { letter-spacing: -0.03em; }
   border: 1px dashed var(--line-strong);
   border-radius: 18px;
 }
-.repos__status button { color: var(--red); text-decoration: underline; text-underline-offset: 3px; }
 .repos__track {
   position: relative;
   display: flex;

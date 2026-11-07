@@ -50,7 +50,7 @@ src/
 │   ├── Hero.jsx           首屏：标题逐字入场、人物、快捷联系图标
 │   ├── Intro.jsx          一句话介绍，逐字随滚动点亮
 │   ├── Work.jsx           我在做什么 + 坐姿人物 + 背景 marquee 文字带
-│   ├── GitHubProjects.jsx  GitHub 最新公开仓库横向轮播
+│   ├── GitHubProjects.jsx  配置选定的 GitHub 仓库横向轮播
 │   ├── Stack.jsx          四层技术版图 + 语言列表
 │   ├── Path.jsx           经历时间线
 │   ├── Method.jsx         方法论三步
@@ -60,8 +60,9 @@ src/
 │   ├── ScrollZoom.jsx     通用滚动缩放容器
 │   └── Reveal.jsx         入场淡入上浮 / 逐行遮罩
 ├── lib/
-│   ├── github-config.js   GitHub 账号与补充组织配置
-│   └── github.js          同域仓库接口客户端与浏览器缓存
+│   └── projects.js        配置解析、顺序与静态资料合并
+├── data/
+│   └── projects.json      构建时保存并嵌入页面的仓库资料
 └── styles/
     ├── base.css           颜色、字重、缓动、间距等 token
     └── sections.css       各区块版式与响应式断点
@@ -77,15 +78,29 @@ src/
 
 **改配色**：`src/styles/base.css` 顶部的 `:root` 里有全部颜色变量，包括四种卡片底色（`--lav-wash` / `--sand-wash` / `--mint-wash` / `--red-wash`）。
 
-### GitHub 最近的项目
+### GitHub 项目配置
 
-项目卡片通过同域 `/api/github-repos` 读取数据，由 `functions/api/github-repos.js` 中的 Cloudflare Pages Function 请求 GitHub。服务端读取 `SeimoDev` 的个人仓库和所拥有组织的公开仓库，合并去重后按最近推送时间（`pushed_at`）降序展示前 5 个，包括公开的 Fork。组织通过公开成员关系发现，再核对 `admin`（所有者）角色，普通成员所在的组织不会纳入。
+展示哪些项目由根目录的 `projects.config.json` 决定，`repositories` 填写 GitHub 仓库地址，`githubUrl` 是卡片区域右上角的个人 GitHub 链接。例如：
 
-配置位于 `src/lib/github-config.js`：`GITHUB_USERNAME` 为个人账号；若组织成员关系隐藏，可把已拥有的组织名补充到 `GITHUB_OWNED_ORGANIZATIONS`。公开接口无法自动发现隐藏的组织成员关系。
+```json
+{
+  "githubUrl": "https://github.com/SeimoDev",
+  "repositories": [
+    "https://github.com/SeimoDev/Homepage",
+    "https://github.com/WorkWorkLabs/your-repository"
+  ]
+}
+```
 
-Cloudflare 边缘缓存与浏览器缓存均为 15 分钟。边缘缓存会尽量保留最近成功的数据 24 小时，GitHub 暂时失败时返回旧数据；限流期间按重置时间退避，避免重试继续消耗请求。边缘缓存可能被回收，冷启动且 GitHub 不可用时仍会显示错误。页面会区分限流、网络失败与服务尚未部署。卡片每 5 秒自动横向切换，支持左右按钮和触摸滑动，鼠标悬停、键盘聚焦或离开视口时暂停，开启减少动态效果时关闭自动播放。
+按配置顺序展示，不自动选择最新五个，也没有五个的数量限制。修改配置后重新构建即可。
 
-本地 `npm run dev` 和 `npm run preview` 通过 Vite 的服务端中间件提供同一接口。可在未跟踪的 `.env.local` 中设置 `GITHUB_TOKEN`，它只用于服务端请求。
+`npm run build` 会先获取配置中各仓库的公开简介、语言、星标和推送时间，保存到 `src/data/projects.json`，再将数据直接打包进页面 JavaScript。浏览器渲染时不调用 GitHub API 或站内仓库接口，Cloudflare Pages 可以按纯静态站点部署。
+
+GitHub 限流或网络失败时保留已有资料；新仓库没有缓存时仍展示名称和仓库链接，不伪造星标、推送时间或所有者类型。私有仓库资料不会写入静态文件。配置地址无效会在构建时提示错误。
+
+可用 `npm run sync:projects` 单独更新资料。构建环境可以设置可选的 `GITHUB_TOKEN`，本地也可放在未跟踪的 `.env.local`，以提高请求额度；它只用于构建脚本，不会进入浏览器产物。不要使用 `VITE_GITHUB_TOKEN`。
+
+卡片继续支持每 5 秒自动横向切换、左右按钮和触摸滑动。鼠标悬停、键盘聚焦或离开视口时暂停，开启减少动态效果时关闭自动播放。
 
 ---
 
@@ -119,15 +134,13 @@ Cloudflare 边缘缓存与浏览器缓存均为 15 分钟。边缘缓存会尽�
 
 ### Cloudflare Pages
 
-使用 Git 集成部署整个仓库，构建命令为 `npm run build`，输出目录为 `dist`，项目根目录保留 `functions/` 与 `server/`。Pages 会自动编译根目录下的 Functions；`public/_routes.json` 限制只有 `/api/*` 进入 Function，页面和资源仍由静态托管提供。
+构建命令为 `npm run build`，输出目录为 `dist`。项目与仓库资料全部编译为静态资源，不需要 Pages Functions、运行时 Token 或额外数据库。使用 Git 集成部署仓库，或将构建后的 `dist/` 上传即可。
 
-建议在 Pages 项目的 **Settings → Variables and Secrets** 中添加服务端 Secret `GITHUB_TOKEN`，以提高 GitHub API 请求额度，然后重新部署。Token 只需读取公开数据，不需要写仓库权限；不要命名为 `VITE_GITHUB_TOKEN`，`VITE_` 变量会进入浏览器产物。
-
-部署后访问 `/api/github-repos` 应返回 `application/json` 和 `repositories` 数组。若返回首页 HTML，说明 Functions 未部署。单独将 `dist/` 拖拽上传不会部署根目录下的 Functions；手动部署应在项目根目录运行 `npx wrangler pages deploy dist`。
+如需提高构建时同步 GitHub 数据的请求额度，可在 Pages 的构建环境设置 `GITHUB_TOKEN`，然后重新部署。即使没有 Token 或同步失败，也会使用已保存的仓库资料。
 
 ### 其他静态服务器
 
-`npm run build` 生成页面静态资源。若使用 nginx 或 GitHub Pages，需要另外部署并转发 `/api/github-repos`，仅上传静态资源无法提供仓库接口。
+`npm run build` 后将 `dist/` 的内容放到任意静态服务器即可。
 
 nginx 示例：
 
