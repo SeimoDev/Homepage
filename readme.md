@@ -2,7 +2,7 @@
 
 > 永远相信美好的事情即将发生。
 
-一个用 React 写的个人介绍落地页。浅色纸感底、可变字重的标题、跟滚动联动的缩放与字重变化，支持简中 / 繁中 / English / 日本語 四种语言。
+一个用 React 写的个人主页。浅色纸感底、OC 插画和统一的间距，展示项目、技术、经历与兴趣，支持简中 / 繁中 / English / 日本語 四种语言。
 
 博客：[blog.seimo.cn](https://blog.seimo.cn)
 
@@ -14,8 +14,7 @@
 |---|---|
 | 框架 | React 19 |
 | 构建 | Vite 8 |
-| 动效 | framer-motion（滚动进度、弹簧阻尼、`useReducedMotion` 适配） |
-| 平滑滚动 | Lenis |
+| 交互 | 项目横向轮播、原生锚点滚动，适配减少动态效果 |
 | 字体 | Inter Tight / Noto Sans SC / Instrument Serif / JetBrains Mono（自托管 woff2） |
 
 没有 UI 框架，样式全部手写在一个设计 token 体系上（`src/styles/base.css` 定义变量，`sections.css` 写版式）。
@@ -40,25 +39,26 @@ Node 版本需要 `^20.19.0` 或 `>=22.12.0`（Vite 8 的要求）。
 ```
 src/
 ├── main.jsx               入口，挂载 LangProvider
-├── App.jsx                页面装配 + 首屏加载动画
+├── App.jsx                页面装配
 ├── content.js             四种语言的全部文案（唯一文案来源）
 ├── i18n.jsx               语言上下文、浏览器语言探测、localStorage 记忆
 ├── hooks/
-│   └── useSmoothScroll.js Lenis 封装 + scrollToId / scrollToTop
+│   └── useSmoothScroll.js 原生锚点滚动与键盘焦点处理
 ├── components/
-│   ├── Nav.jsx            固定导航，滚动时右半渐隐、链接移到居中
-│   ├── Hero.jsx           首屏：标题逐字入场、人物、快捷联系图标
-│   ├── Intro.jsx          一句话介绍，逐字随滚动点亮
-│   ├── Work.jsx           我在做什么 + 坐姿人物 + 背景 marquee 文字带
+│   ├── Nav.jsx            固定导航、移动端菜单与语言切换
+│   ├── Hero.jsx           首屏介绍、人物与项目/联系入口
+│   ├── Intro.jsx          关于我与四项个人资料
+│   ├── Work.jsx           当前工作、项目与坐姿人物
 │   ├── GitHubProjects.jsx  配置选定的 GitHub 仓库横向轮播
 │   ├── Stack.jsx          四层技术版图 + 语言列表
 │   ├── Path.jsx           经历时间线
 │   ├── Method.jsx         方法论三步
 │   ├── Life.jsx           技术之外的三张卡片
 │   ├── Contact.jsx        联系方式 + 结语
-│   ├── ImpactTitle.jsx    区块标题：进入视口时缩放冲击 + 字重收紧
-│   ├── ScrollZoom.jsx     通用滚动缩放容器
-│   └── Reveal.jsx         入场淡入上浮 / 逐行遮罩
+│   ├── SectionHeading.jsx 统一的栏目编号与标题
+│   ├── ImpactTitle.jsx    区块标题
+│   ├── Icon.jsx           统一尺寸与笔画的线性图标
+│   └── Reveal.jsx         语义容器与媒体查询 Hook
 ├── lib/
 │   └── projects.js        配置解析、顺序与静态资料合并
 ├── data/
@@ -118,9 +118,12 @@ GitHub 限流或网络失败时保留已有资料；新仓库没有缓存时仍�
 
 ## 无障碍与动效
 
-- 所有动效都读了 `prefers-reduced-motion`，系统开启减少动态效果时会关掉位移和缩放
-- 首屏标题、导航、卡片都保留键盘焦点样式和语义标签
-- 人物图带 `alt`
+- 系统开启 `prefers-reduced-motion` 时关闭首屏入场、菜单过渡与轮播自动播放，锚点立即跳转
+- 语言开关始终可用，移动端菜单支持 Escape，关闭后恢复页面滚动与键盘操作
+- 导航、卡片和控件保留可见的键盘焦点，说明性人物图带本地化 `alt`
+- 区块留白为桌面 96px、手机 64px，卡片内边距 24px；三个文字颜色角色保持可读的对比度
+
+版式精修参考 [unslop](https://heydamir.design/unslop)，作者 Damir Sokolovsky（[@heydamir](https://x.com/heydamir)），CC BY 4.0。沿用站点的纸色、字体、OC 与栏目顺序。
 
 ---
 

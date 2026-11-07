@@ -5,6 +5,7 @@ import projectConfig from '../../projects.config.json';
 import projectData from '../data/projects.json';
 import { selectProjects } from '../lib/projects';
 import { useMediaQuery } from './Reveal';
+import Icon from './Icon';
 
 const repositories = selectProjects(projectConfig.repositories, projectData.repositories);
 
@@ -63,33 +64,27 @@ export default function GitHubProjects() {
       }}
     >
       <div className="repos__head">
-        <h3 className="repos__label eyebrow" id="repos-title">
-          <span className="pulse" aria-hidden="true" />
+        <h3 className="repos__label" id="repos-title">
           {t.work.cardLabel}
         </h3>
         <a className="repos__source" href={projectConfig.githubUrl} target="_blank" rel="noopener noreferrer">
-          GitHub <span aria-hidden="true">↗</span>
+          GitHub <Icon name="external" />
         </a>
       </div>
-      <p className="repos__hint">{copy.hint}</p>
-
       {repositories.length === 0 && <p className="repos__status repos__status--empty">{copy.empty}</p>}
 
       {repositories.length > 0 && (
         <>
-          <div className="repos__track" id="repos-track" ref={track} role="list" onScroll={syncActive} data-lenis-prevent>
+          <div className="repos__track" id="repos-track" ref={track} role="list" onScroll={syncActive}>
             {repositories.map((repo) => (
-              <article className="repo-card" role="listitem" key={repo.id}>
+              <article className="repo-card" role="listitem" key={repo.sourceUrl}>
                 <a className="repo-card__link" href={repo.url} target="_blank" rel="noopener noreferrer">
-                  <div className="repo-card__top">
-                    <span className="repo-card__owner">{repo.owner}</span>
-                    {typeof repo.organization === 'boolean' && <span className="repo-card__kind">{repo.organization ? copy.organization : copy.personal}</span>}
-                  </div>
-                  <h4 className="repo-card__title">{repo.name}<span aria-hidden="true">↗</span></h4>
-                  <p className="repo-card__description">{repo.description || (repo.metadataUnavailable ? copy.viewRepository : copy.noDescription)}</p>
+                  <span className="repo-card__owner">{repo.owner}</span>
+                  <h4 className="repo-card__title">{repo.name}<Icon name="external" /></h4>
+                  <p className="repo-card__description">{repo.description?.replace(/\p{Extended_Pictographic}[\uFE0F\u200D]*/gu, '').replace(/[\uFE0F\u200D]/g, '').replace(/\s+/g, ' ').trim() || (repo.metadataUnavailable ? copy.viewRepository : copy.noDescription)}</p>
                   <div className="repo-card__meta">
-                    {repo.language && <span className="repo-card__language"><i aria-hidden="true" />{repo.language}</span>}
-                    {Number.isFinite(repo.stars) && <span aria-label={`${copy.stars}: ${repo.stars}`}><span aria-hidden="true">☆ </span>{repo.stars.toLocaleString(lang)}</span>}
+                    {repo.language && <span>{repo.language}</span>}
+                    {Number.isFinite(repo.stars) && <span className="repo-card__stars" aria-label={`${copy.stars}: ${repo.stars}`}><Icon name="star" />{repo.stars.toLocaleString(lang)}</span>}
                     {repo.pushedAt && <time dateTime={repo.pushedAt} title={copy.updated}>
                       {new Date(repo.pushedAt).toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' })}
                     </time>}
@@ -103,14 +98,14 @@ export default function GitHubProjects() {
             <div className="repos__buttons">
               {!reduce && repositories.length > 1 && (
                 <button type="button" className="repos__control" aria-label={paused ? copy.play : copy.pause} aria-controls="repos-track" onClick={() => setPaused((value) => !value)}>
-                  <span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>
+                  <Icon name={paused ? 'play' : 'pause'} />
                 </button>
               )}
               <button type="button" className="repos__control" aria-label={copy.previous} aria-controls="repos-track" disabled={repositories.length < 2} onClick={() => scrollTo((active - 1 + repositories.length) % repositories.length)}>
-                <span aria-hidden="true">←</span>
+                <Icon name="left" />
               </button>
               <button type="button" className="repos__control" aria-label={copy.next} aria-controls="repos-track" disabled={repositories.length < 2} onClick={() => scrollTo((active + 1) % repositories.length)}>
-                <span aria-hidden="true">→</span>
+                <Icon name="right" />
               </button>
             </div>
           </div>

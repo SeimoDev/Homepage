@@ -1,260 +1,126 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  AnimatePresence,
-  motion,
-  useScroll,
-  useTransform,
-  useSpring,
-  useMotionValueEvent,
-} from 'framer-motion';
 import { useLang } from '../i18n';
 import { ui, ORDER } from '../content';
-import { scrollToId } from '../hooks/useSmoothScroll';
+import { scrollToId, scrollToTop } from '../hooks/useSmoothScroll';
+import { useMediaQuery } from './Reveal';
+import Icon from './Icon';
 
-function LangSwitch({ compact = false }) {
-  const { lang, setLang } = useLang();
+const moveTo = (id) => id === 'top' ? scrollToTop() : scrollToId(id);
+
+function LangSwitch() {
+  const { lang, setLang, t } = useLang();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const button = useRef(null);
+  const menu = useRef(null);
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    menu.current?.querySelector('[aria-selected="true"]')?.focus();
+    const outside = (event) => { if (!ref.current?.contains(event.target)) setOpen(false); };
+    const escape = (event) => {
+      if (event.key === 'Escape') { setOpen(false); button.current?.focus(); }
     };
-    const onKey = (e) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('pointerdown', onDown);
-    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
     return () => {
-      document.removeEventListener('pointerdown', onDown);
-      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
     };
   }, [open]);
 
-  return (
-    <div className={`lang ${compact ? 'lang--compact' : ''}`} ref={ref}>
-      <button
-        type="button"
-        className="lang__btn"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label="Language"
-      >
-        <span className="lang__globe" aria-hidden="true">
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.1">
-            <circle cx="8" cy="8" r="6.2" />
-            <path d="M1.8 8h12.4M8 1.8c1.8 1.9 2.7 4 2.7 6.2S9.8 12.3 8 14.2C6.2 12.3 5.3 10.2 5.3 8S6.2 3.7 8 1.8Z" />
-          </svg>
-        </span>
-        <span className="lang__code">{ui[lang].code}</span>
-      </button>
+  function navigate(event) {
+    const options = [...menu.current.querySelectorAll('[role="option"]')];
+    const current = options.indexOf(document.activeElement);
+    let next;
+    if (event.key === 'ArrowDown') next = (current + 1) % options.length;
+    if (event.key === 'ArrowUp') next = (current - 1 + options.length) % options.length;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = options.length - 1;
+    if (next !== undefined) { event.preventDefault(); options[next].focus(); }
+  }
 
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            className="lang__menu"
-            role="listbox"
-            aria-label="Language"
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {ORDER.map((code, i) => (
-              <li key={code}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={code === lang}
-                  className={`lang__item ${code === lang ? 'is-active' : ''}`}
-                  onClick={() => {
-                    setLang(code);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="lang__idx">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="lang__label">{ui[code].label}</span>
-                  <span className="lang__tick" aria-hidden="true">
-                    {code === lang ? '●' : ''}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
+  return (
+    <div className="lang" ref={ref} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+      <button className="lang__btn" type="button" ref={button} onClick={() => setOpen((value) => !value)} aria-label={t.controls.language} aria-haspopup="listbox" aria-expanded={open} aria-controls="language-options"><Icon name="globe" /><span className="lang__code">{ui[lang].code}</span></button>
+      {open && <ul className="lang__menu" id="language-options" ref={menu} role="listbox" aria-label={t.controls.language} onKeyDown={navigate}>
+        {ORDER.map((code) => <li key={code} role="presentation"><button type="button" className={`lang__item${code === lang ? ' is-active' : ''}`} role="option" aria-selected={code === lang} tabIndex={code === lang ? 0 : -1} onClick={() => { setLang(code); setOpen(false); button.current?.focus(); }}><span className="lang__label">{ui[code].label}</span>{code === lang && <Icon name="check" />}</button></li>)}
+      </ul>}
     </div>
   );
 }
 
-export { LangSwitch };
-
 export default function Nav() {
   const { t } = useLang();
-  const { scrollY } = useScroll();
   const [solid, setSolid] = useState(false);
   const [active, setActive] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // How far the links have to travel from "left gutter" to "centered".
-  const [shift, setShift] = useState(0);
-  // Scroll distance over which the nav re-composes.
-  const [range, setRange] = useState(700);
-
-  const innerRef = useRef(null);
-  const linksRef = useRef(null);
-
-  useMotionValueEvent(scrollY, 'change', (v) => setSolid(v > 24));
+  const button = useRef(null);
+  const pendingSection = useRef(null);
+  const wide = useMediaQuery('(min-width: 901px)');
 
   useEffect(() => {
-    const measure = () => {
-      const links = linksRef.current;
-      if (!links || links.offsetWidth === 0) {
-        setShift(0);
-        return;
-      }
-      // Measure the untransformed layout position: the scroll-linked x would
-      // otherwise bias the reading and the links would never reach centre.
-      const prev = links.style.transform;
-      links.style.transform = 'none';
-      const rect = links.getBoundingClientRect();
-      links.style.transform = prev;
-
-      const baseCenter = rect.left + rect.width / 2;
-      setShift(window.innerWidth / 2 - baseCenter);
-
-      const intro = document.getElementById('intro');
-      const top = intro ? intro.getBoundingClientRect().top + window.scrollY : window.innerHeight;
-      setRange(Math.max(320, top * 0.8));
+    const sections = t.nav.map(({ id }) => document.getElementById(id)).filter(Boolean);
+    const update = () => {
+      setSolid(window.scrollY > 8);
+      const position = window.scrollY + window.innerHeight * 0.3;
+      const current = [...sections].reverse().find((section) => section.offsetTop <= position);
+      setActive(current?.id || '');
     };
-
-    measure();
-    window.addEventListener('resize', measure);
-    document.fonts?.ready.then(measure).catch(() => {});
-
-    return () => window.removeEventListener('resize', measure);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => { window.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
   }, [t.nav]);
 
-  const progress = useTransform(scrollY, [0, range], [0, 1]);
-  const eased = useSpring(progress, { stiffness: 90, damping: 24, mass: 0.32 });
-  const linksX = useTransform(eased, [0, 1], [0, shift]);
-  const rightOpacity = useTransform(eased, [0, 0.65], [1, 0]);
-  const rightShift = useTransform(eased, [0, 1], [0, 10]);
-  const rightPointer = useTransform(eased, (v) => (v > 0.6 ? 'none' : 'auto'));
-
+  useEffect(() => { if (wide) setMenuOpen(false); }, [wide]);
   useEffect(() => {
-    const ids = t.nav.map((n) => n.id);
-    const els = ids.map((id) => document.getElementById(id)).filter(Boolean);
-    if (!els.length) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id);
-        });
-      },
-      { rootMargin: '-45% 0px -50% 0px', threshold: 0 }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [t.nav]);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
-    if (menuOpen && window.__lenis) window.__lenis.stop();
-    if (!menuOpen && window.__lenis) window.__lenis.start();
+    if (!menuOpen) return;
+    const before = document.body.style.overflow;
+    const main = document.getElementById('main');
+    document.body.style.overflow = 'hidden';
+    if (main) main.inert = true;
+    const focus = requestAnimationFrame(() => document.querySelector('.sheet__link')?.focus());
+    const escape = (event) => {
+      if (event.key === 'Escape') { setMenuOpen(false); button.current?.focus(); }
+    };
+    document.addEventListener('keydown', escape);
+    return () => {
+      cancelAnimationFrame(focus);
+      document.body.style.overflow = before;
+      if (main) main.inert = false;
+      document.removeEventListener('keydown', escape);
+    };
   }, [menuOpen]);
 
-  const go = (id) => {
-    setMenuOpen(false);
-    setTimeout(() => scrollToId(id), 60);
+  useEffect(() => {
+    if (menuOpen || !pendingSection.current) return;
+    const id = pendingSection.current;
+    pendingSection.current = null;
+    const frame = requestAnimationFrame(() => moveTo(id));
+    return () => cancelAnimationFrame(frame);
+  }, [menuOpen]);
+
+  const go = (event, id) => {
+    event.preventDefault();
+    if (menuOpen) {
+      pendingSection.current = id;
+      setMenuOpen(false);
+    } else moveTo(id);
   };
 
   return (
     <>
-      <header className={`nav ${solid ? 'is-solid' : ''}`}>
-        <div className="nav__inner wrap" ref={innerRef}>
-          <motion.nav
-            className="nav__links"
-            aria-label="Sections"
-            ref={linksRef}
-            style={{ x: linksX }}
-          >
-            {t.nav.map((item, i) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className={`nav__link ${active === item.id ? 'is-active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToId(item.id);
-                }}
-              >
-                <span className="nav__idx">{String(i + 1).padStart(2, '0')}</span>
-                <span className="nav__word">{item.label}</span>
-              </a>
-            ))}
-          </motion.nav>
-
-          <motion.div
-            className="nav__right"
-            style={{ opacity: rightOpacity, x: rightShift, pointerEvents: rightPointer }}
-          >
-            <LangSwitch />
-            <button
-              type="button"
-              className={`burger ${menuOpen ? 'is-open' : ''}`}
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-            >
-              <span />
-              <span />
-            </button>
-          </motion.div>
-        </div>
-        <div className="nav__progress">
-          <Progress />
+      <header className={`nav${solid ? ' is-solid' : ''}`}>
+        <div className="nav__inner wrap">
+          <a className="nav__brand" href="#top" aria-label={t.controls.home} onClick={(event) => go(event, 'top')}><img src="/favicon-192x192.png?v=round" width="28" height="28" alt="" /><span>Seimo</span></a>
+          <nav className="nav__links" aria-label={t.controls.sections}>
+            {t.nav.map((item) => <a key={item.id} href={`#${item.id}`} className={`nav__link${active === item.id ? ' is-active' : ''}`} aria-current={active === item.id ? 'location' : undefined} onClick={(event) => go(event, item.id)}>{item.label}</a>)}
+          </nav>
+          <div className="nav__right"><LangSwitch /><button ref={button} type="button" className="burger" aria-label={menuOpen ? t.controls.closeMenu : t.controls.openMenu} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((value) => !value)}><Icon name={menuOpen ? 'close' : 'menu'} /></button></div>
         </div>
       </header>
-
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            className="sheet"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="sheet__inner wrap">
-              <ul className="sheet__list">
-                {t.nav.map((item, i) => (
-                  <motion.li
-                    key={item.id}
-                    initial={{ opacity: 0, y: 22 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.06 + i * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <button type="button" onClick={() => go(item.id)}>
-                      <span className="sheet__idx">{String(i + 1).padStart(2, '0')}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  </motion.li>
-                ))}
-              </ul>
-              <div className="sheet__foot">
-                <LangSwitch compact />
-                <span className="eyebrow">{t.contact.mottoEn}</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {menuOpen && <nav className="sheet" id="mobile-navigation" aria-label={t.controls.sections}><ul className="sheet__list wrap">{t.nav.map((item, index) => <li key={item.id}><a className="sheet__link" href={`#${item.id}`} onClick={(event) => go(event, item.id)}><span className="sheet__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{item.label}</a></li>)}</ul></nav>}
     </>
   );
-}
-
-function Progress() {
-  const { scrollYProgress } = useScroll();
-  return <motion.div className="nav__bar" style={{ scaleX: scrollYProgress }} />;
 }
