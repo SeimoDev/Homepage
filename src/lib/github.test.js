@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 let moduleId = 0;
+const repository = { id: 1, name: 'Homepage' };
+const json = (data, status = 200) => new Response(JSON.stringify(data), {
+  status, headers: { 'Content-Type': 'application/json' },
+});
 
 async function setup(t, respond) {
   const storage = new Map();
@@ -18,91 +22,58 @@ async function setup(t, respond) {
     else delete globalThis.localStorage;
   });
   const calls = [];
-  t.mock.method(globalThis, 'fetch', async (url) => {
-    const path = String(url).replace('https://api.github.com', '');
-    calls.push(path);
-    return respond(path);
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    calls.push(url);
+    assert.equal(url, '/api/github-repos');
+    assert.equal(options.headers, undefined);
+    return respond(url);
   });
   const github = await import(`./github.js?test=${++moduleId}`);
   return { ...github, storage, calls };
 }
 
-const json = (data, headers = {}) => new Response(JSON.stringify(data), { headers });
-const repo = (id, day, organization = false) => ({
-  id,
-  name: `project-${id}`,
-  private: false,
-  owner: { login: organization ? 'OwnedOrg' : 'SeimoDev', type: organization ? 'Organization' : 'User' },
-  html_url: `https://github.com/${organization ? 'OwnedOrg' : 'SeimoDev'}/project-${id}`,
-  description: null,
-  language: 'JavaScript',
-  stargazers_count: id,
-  pushed_at: `2026-01-${String(day).padStart(2, '0')}T00:00:00Z`,
-});
-
-test('merges the global latest five public repos and verifies organization ownership across pages', async (t) => {
-  const api = await setup(t, (path) => {
-    if (path === '/users/SeimoDev/orgs?per_page=100&page=1') {
-      return json([{ login: 'MemberOrg' }], { link: '<https://api.github.com/users/SeimoDev/orgs?per_page=100&page=2>; rel="next"' });
-    }
-    if (path === '/users/SeimoDev/orgs?per_page=100&page=2') return json([{ login: 'OwnedOrg' }]);
-    if (path === '/orgs/MemberOrg/members?role=admin&per_page=100&page=1') return json([{ login: 'SomeoneElse' }]);
-    if (path === '/orgs/OwnedOrg/members?role=admin&per_page=100&page=1') {
-      return json([{ login: 'OtherOwner' }], { link: '<https://api.github.com/orgs/OwnedOrg/members?role=admin&per_page=100&page=2>; rel="next"' });
-    }
-    if (path === '/orgs/OwnedOrg/members?role=admin&per_page=100&page=2') return json([{ login: 'seimodev' }]);
-    if (path === '/users/SeimoDev/repos?type=owner&sort=pushed&direction=desc&per_page=5') {
-      return json([repo(5, 9), repo(4, 7), repo(3, 5), repo(2, 3), repo(1, 1)]);
-    }
-    if (path === '/orgs/ownedorg/repos?type=public&sort=pushed&direction=desc&per_page=5') {
-      return json([repo(10, 10, true), repo(9, 8, true), repo(8, 6, true), repo(7, 4, true), repo(6, 2, true)]);
-    }
-    assert.fail(`Unexpected GitHub request: ${path}`);
-  });
-  const repositories = await api.loadLatestRepositories();
-  assert.deepEqual(repositories.map((item) => item.id), [10, 5, 9, 4, 8]);
-  assert.equal(repositories[0].organization, true);
-  assert.equal(repositories[1].organization, false);
-  assert.ok(!api.calls.some((path) => path.startsWith('/orgs/memberorg/repos')));
-  assert.deepEqual(api.readRepositoryCache().repositories, repositories);
-});
-
-test('filters private results, deduplicates repositories, and keeps public forks', async (t) => {
-  const api = await setup(t, (path) => path.includes('/orgs?') ? json([]) : json([
-    { ...repo(1, 1), fork: true }, repo(1, 1), { ...repo(2, 2), private: true }, repo(3, 3),
-  ]));
-  assert.deepEqual((await api.loadLatestRepositories()).map((item) => item.id), [3, 1]);
-});
-
-test('shares concurrent loads, uses fresh cache, and refreshes expired cache', async (t) => {
-  const api = await setup(t, (path) => path.includes('/orgs?') ? json([]) : json([repo(1, 1)]));
+test('requests only the same-origin endpoint and shares concurrent browser loads', async (t) => {
+  const api = await setup(t, () => json({ repositories: [repository], stale: false }));
   const [first, second] = await Promise.all([api.loadLatestRepositories(), api.loadLatestRepositories()]);
-  assert.deepEqual(first, second);
-  assert.equal(api.calls.length, 2);
+  assert.deepEqual(first, [repository]);
+  assert.deepEqual(second, first);
+  assert.equal(api.calls.length, 1);
   await api.loadLatestRepositories();
-  assert.equal(api.calls.length, 2);
+  assert.equal(api.calls.length, 1);
   const [key, value] = [...api.storage.entries()][0];
   api.storage.set(key, JSON.stringify({ ...JSON.parse(value), savedAt: Date.now() - 16 * 60 * 1000 }));
   await api.loadLatestRepositories();
-  assert.equal(api.calls.length, 4);
+  assert.equal(api.calls.length, 2);
 });
 
-test('keeps the last successful cache on rate limits and allows retry', async (t) => {
+test('keeps the browser cache on rate limits and propagates the reason for the UI', async (t) => {
   let limited = false;
-  const api = await setup(t, (path) => limited
-    ? new Response('{}', { status: 403 })
-    : path.includes('/orgs?') ? json([]) : json([repo(1, 1)]));
+  const api = await setup(t, () => limited ? json({ code: 'GITHUB_RATE_LIMITED' }, 503)
+    : json({ repositories: [repository] }));
   const repositories = await api.loadLatestRepositories();
   limited = true;
-  await assert.rejects(api.loadLatestRepositories(true), /GitHub API: 403/);
+  await assert.rejects(api.loadLatestRepositories(true), error => error.code === 'GITHUB_RATE_LIMITED');
   assert.deepEqual(api.readRepositoryCache().repositories, repositories);
   limited = false;
   assert.deepEqual(await api.loadLatestRepositories(true), repositories);
 });
 
-test('still loads repositories when browser storage is unavailable', async (t) => {
-  const api = await setup(t, (path) => path.includes('/orgs?') ? json([]) : json([repo(1, 1)]));
+test('detects Pages returning the SPA HTML when the Function is missing', async (t) => {
+  const api = await setup(t, () => new Response('<html>Homepage</html>', { headers: { 'Content-Type': 'text/html' } }));
+  await assert.rejects(api.loadLatestRepositories(), error => error.code === 'ENDPOINT_UNAVAILABLE');
+});
+
+test('does not turn a stale server snapshot into fresh browser data', async (t) => {
+  const api = await setup(t, () => json({ repositories: [repository], stale: true, updatedAt: Date.now() - 3600000 }));
+  await api.loadLatestRepositories();
+  assert.ok(Date.now() - api.readRepositoryCache().savedAt >= 3600000);
+  await api.loadLatestRepositories();
+  assert.equal(api.calls.length, 2);
+});
+
+test('still loads when browser storage is unavailable', async (t) => {
+  const api = await setup(t, () => json({ repositories: [repository] }));
   globalThis.localStorage.getItem = () => { throw new Error('Storage blocked'); };
   globalThis.localStorage.setItem = () => { throw new Error('Storage blocked'); };
-  assert.deepEqual((await api.loadLatestRepositories()).map((item) => item.id), [1]);
+  assert.deepEqual(await api.loadLatestRepositories(), [repository]);
 });

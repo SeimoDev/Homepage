@@ -8,6 +8,8 @@ dist/
 Key.txt
 .env
 .env.*
+.dev.vars*
+.wrangler/
 
 # local working files
 shots/

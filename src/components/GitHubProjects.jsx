@@ -9,6 +9,7 @@ export default function GitHubProjects() {
   const copy = t.work.repositories;
   const [repositories, setRepositories] = useState(() => readRepositoryCache()?.repositories || []);
   const [status, setStatus] = useState('loading');
+  const [errorCode, setErrorCode] = useState(null);
   const [attempt, setAttempt] = useState(0);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -28,8 +29,11 @@ export default function GitHubProjects() {
       setActive(0);
       if (track.current) track.current.scrollLeft = 0;
       setStatus('ready');
-    }).catch(() => {
-      if (!cancelled) setStatus('error');
+    }).catch((error) => {
+      if (!cancelled) {
+        setErrorCode(error.code);
+        setStatus('error');
+      }
     });
     return () => { cancelled = true; };
   }, [attempt]);
@@ -90,7 +94,12 @@ export default function GitHubProjects() {
       <div className={`repos__status${repositories.length === 0 ? ' repos__status--empty' : ''}`} role="status" aria-live="polite">
         {status === 'loading' && repositories.length === 0 && <p>{copy.loading}</p>}
         {status === 'error' && (
-          <p>{copy.error} <button type="button" onClick={() => setAttempt((value) => value + 1)}>{copy.retry}</button></p>
+          <p>
+            {errorCode === 'GITHUB_RATE_LIMITED' ? copy.rateLimit
+              : errorCode === 'ENDPOINT_UNAVAILABLE' ? copy.serviceUnavailable
+                : errorCode === 'NETWORK_ERROR' ? copy.networkError : copy.error}{' '}
+            <button type="button" onClick={() => setAttempt((value) => value + 1)}>{copy.retry}</button>
+          </p>
         )}
         {status === 'ready' && repositories.length === 0 && <p>{copy.empty}</p>}
       </div>
