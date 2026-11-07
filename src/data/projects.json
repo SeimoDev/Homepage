@@ -1,6 +1,62 @@
 {
-  "updatedAt": 1794055232025,
+  "updatedAt": 1794056599181,
   "repositories": [
+    {
+      "id": "seimodev/purecms",
+      "name": "PureCMS",
+      "owner": "SeimoDev",
+      "url": "https://github.com/SeimoDev/PureCMS",
+      "sourceUrl": "https://github.com/SeimoDev/PureCMS",
+      "description": "一个面向中文个人博客场景的全栈 CMS，技术栈为 React + Go + PostgreSQL + Docker。前台、后台管理侧和部署配置都按 Material Design 3 风格与中文互联网使用习惯构建。",
+      "language": null,
+      "stars": null,
+      "pushedAt": null,
+      "organization": null,
+      "metadataUnavailable": true,
+      "descriptionSource": "readme"
+    },
+    {
+      "id": "pantashare/pantashare",
+      "name": "PanTaShare",
+      "owner": "PanTaShare",
+      "url": "https://github.com/PanTaShare/PanTaShare",
+      "sourceUrl": "https://github.com/PanTaShare/PanTaShare",
+      "description": "PanTaShare 是一个使用 Go + React + PostgreSQL + Docker Compose 搭建的微博式 SNS 与网盘一体化平台。",
+      "language": null,
+      "stars": null,
+      "pushedAt": null,
+      "organization": null,
+      "metadataUnavailable": true,
+      "descriptionSource": "readme"
+    },
+    {
+      "id": "seimodev/wacos",
+      "name": "WacOS",
+      "owner": "SeimoDev",
+      "url": "https://github.com/SeimoDev/WacOS",
+      "sourceUrl": "https://github.com/SeimoDev/WacOS",
+      "description": "WacOS brings the two macOS window‑management features to Windows 11 with the same behaviour, gestures, shortcuts and settings:",
+      "language": null,
+      "stars": null,
+      "pushedAt": null,
+      "organization": null,
+      "metadataUnavailable": true,
+      "descriptionSource": "readme"
+    },
+    {
+      "id": "seimodev/purewiki",
+      "name": "PureWiki",
+      "owner": "SeimoDev",
+      "url": "https://github.com/SeimoDev/PureWiki",
+      "sourceUrl": "https://github.com/SeimoDev/PureWiki",
+      "description": "PureWiki 是一个基于 Vue 3 和 Vite 构建的现代化静态 Wiki 系统.",
+      "language": null,
+      "stars": null,
+      "pushedAt": null,
+      "organization": null,
+      "metadataUnavailable": true,
+      "descriptionSource": "readme"
+    },
     {
       "id": 657445004,
       "name": "Homepage",
@@ -13,58 +69,6 @@
       "stars": 5,
       "pushedAt": "2026-11-07T12:29:52Z",
       "fetchedAt": 1794055231818
-    },
-    {
-      "id": 1329599417,
-      "name": "multica",
-      "owner": "SeimoDev",
-      "organization": false,
-      "url": "https://github.com/SeimoDev/multica",
-      "sourceUrl": "https://github.com/SeimoDev/multica",
-      "description": "Assign issues to Claude Code, Codex, Cursor, and 17 more coding agents like teammates — open-source and self-hostable.",
-      "language": "Go",
-      "stars": 0,
-      "pushedAt": "2026-10-30T11:58:42Z",
-      "fetchedAt": 1794055232011
-    },
-    {
-      "id": 1425616678,
-      "name": "xjq",
-      "owner": "SeimoDev",
-      "organization": false,
-      "url": "https://github.com/SeimoDev/xjq",
-      "sourceUrl": "https://github.com/SeimoDev/xjq",
-      "description": null,
-      "language": "C",
-      "stars": 0,
-      "pushedAt": "2026-10-21T12:24:31Z",
-      "fetchedAt": 1794055231975
-    },
-    {
-      "id": 545897646,
-      "name": "SeimoDev",
-      "owner": "SeimoDev",
-      "organization": false,
-      "url": "https://github.com/SeimoDev/SeimoDev",
-      "sourceUrl": "https://github.com/SeimoDev/SeimoDev",
-      "description": null,
-      "language": null,
-      "stars": 0,
-      "pushedAt": "2026-10-08T18:06:24Z",
-      "fetchedAt": 1794055231976
-    },
-    {
-      "id": 1410502220,
-      "name": "gitea",
-      "owner": "SeimoDev",
-      "organization": false,
-      "url": "https://github.com/SeimoDev/gitea",
-      "sourceUrl": "https://github.com/SeimoDev/gitea",
-      "description": "Git with a cup of tea! Painless self-hosted all-in-one software development service, including Git hosting, code review, team collaboration, package registry and CI/CD",
-      "language": null,
-      "stars": 0,
-      "pushedAt": "2026-10-08T13:57:38Z",
-      "fetchedAt": 1794055232025
     }
   ]
 }

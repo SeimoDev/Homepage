@@ -76,3 +76,98 @@ test('network diagnostics never expose the build credential', async () => {
   });
   assert.ok(!JSON.stringify(result).includes(secret));
 });
+
+test('an empty repository description falls back to the first README paragraph as plain text', async () => {
+  const calls = [];
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'], token: 'readme-test-secret',
+    request: async (url, options) => {
+      calls.push(url);
+      assert.equal(options.headers.Authorization, 'Bearer readme-test-secret');
+      if (url.endsWith('/readme')) {
+        assert.equal(options.headers.Accept, 'application/vnd.github.raw+json');
+        return new Response('# Project\n\n![Build](badge.svg)\n\nA **useful** [project](https://example.com).\n\nSecond paragraph.');
+      }
+      return Response.json({ ...metadata('owner', 'project'), description: '  \n ' });
+    },
+  });
+  assert.equal(calls.length, 2);
+  assert.equal(result.repositories[0].description, 'A useful project.');
+  assert.equal(result.repositories[0].descriptionSource, 'readme');
+  assert.deepEqual(result.warnings, []);
+});
+
+test('a repository introduction takes priority and does not fetch its README', async () => {
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'],
+    request: async (url) => {
+      assert.ok(!url.endsWith('/readme'));
+      return Response.json({ ...metadata('owner', 'project'), description: '**Repository** <b>introduction</b> &amp; details.' });
+    },
+  });
+  assert.equal(result.repositories[0].description, 'Repository introduction & details.');
+  assert.equal(result.repositories[0].descriptionSource, 'repository');
+});
+
+test('README failures keep the saved introduction and the newly fetched repository metadata', async () => {
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'],
+    cached: [{ url: 'https://github.com/owner/project', description: '**Saved** introduction', stars: 8 }],
+    request: async (url) => url.endsWith('/readme') || url.startsWith('https://raw.githubusercontent.com/') ? new Response('{}', { status: 403 })
+      : Response.json({ ...metadata('owner', 'project'), description: null }),
+  });
+  assert.equal(result.repositories[0].description, 'Saved introduction');
+  assert.equal(result.repositories[0].stars, 12);
+  assert.equal(result.warnings.length, 1);
+});
+
+test('a missing README still embeds the project and its metadata', async () => {
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'],
+    request: async (url) => url.endsWith('/readme') || url.startsWith('https://raw.githubusercontent.com/') ? new Response('{}', { status: 404 })
+      : Response.json({ ...metadata('owner', 'project'), description: null }),
+  });
+  assert.equal(result.repositories[0].name, 'project');
+  assert.equal(result.repositories[0].description, null);
+  assert.equal(result.repositories[0].stars, 12);
+});
+
+test('a rate-limited metadata API can still embed a public README introduction', async () => {
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'], token: 'build-only-secret',
+    request: async (url, options) => {
+      if (url.startsWith('https://api.github.com/')) return new Response('{}', { status: 403 });
+      assert.equal(options.headers.Authorization, undefined);
+      assert.equal(url, 'https://raw.githubusercontent.com/owner/project/HEAD/README.md');
+      return new Response('# Project\n\nPublic **README** introduction.');
+    },
+  });
+  assert.equal(result.repositories[0].description, 'Public README introduction.');
+  assert.equal(result.repositories[0].descriptionSource, 'readme');
+});
+
+test('the public README fallback handles lowercase filenames without forwarding credentials', async () => {
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'], token: 'build-only-secret',
+    request: async (url, options) => {
+      if (url.endsWith('/readme')) return new Response('{}', { status: 403 });
+      if (url.endsWith('/README.md')) return new Response('Not Found', { status: 404 });
+      if (url.endsWith('/readme.md')) {
+        assert.equal(options.headers.Authorization, undefined);
+        return new Response('# Project\n\nThe lowercase README.');
+      }
+      return Response.json({ ...metadata('owner', 'project'), description: null });
+    },
+  });
+  assert.equal(result.repositories[0].description, 'The lowercase README.');
+});
+
+test('a saved README introduction can refresh even while the metadata API is limited', async () => {
+  const result = await syncProjects({
+    urls: ['https://github.com/owner/project'],
+    cached: [{ url: 'https://github.com/owner/project', description: 'Old introduction', descriptionSource: 'readme' }],
+    request: async (url) => url.startsWith('https://api.github.com/') ? new Response('{}', { status: 403 })
+      : new Response('# Project\n\nUpdated **README** introduction.'),
+  });
+  assert.equal(result.repositories[0].description, 'Updated README introduction.');
+});

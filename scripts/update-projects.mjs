@@ -14,4 +14,4 @@ const { repositories, warnings } = await syncProjects({
 });
 await writeFile(destination, `${JSON.stringify({ updatedAt: Date.now(), repositories }, null, 2)}\n`);
 console.log(`Embedded ${repositories.length} configured GitHub repositories into static project data.`);
-for (const warning of warnings) console.warn(`Using saved metadata or the repository link: ${warning}`);
+for (const warning of warnings) console.warn(`Repository sync fallback: ${warning}`);

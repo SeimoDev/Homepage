@@ -96,6 +96,8 @@ src/
 
 `npm run build` 会先获取配置中各仓库的公开简介、语言、星标和推送时间，保存到 `src/data/projects.json`，再将数据直接打包进页面 JavaScript。浏览器渲染时不调用 GitHub API 或站内仓库接口，Cloudflare Pages 可以按纯静态站点部署。
 
+卡片简介优先使用仓库的 Description；为空时读取 README 的第一段有效正文，跳过标题、图片、徽章、语言导航、代码块、列表和表格。Markdown 与 HTML 格式会移除，链接只保留文字，HTML 实体会解码。API 限流时回退读取公开的 README 原文；原文也无法读取时保留已有简介。
+
 GitHub 限流或网络失败时保留已有资料；新仓库没有缓存时仍展示名称和仓库链接，不伪造星标、推送时间或所有者类型。私有仓库资料不会写入静态文件。配置地址无效会在构建时提示错误。
 
 可用 `npm run sync:projects` 单独更新资料。构建环境可以设置可选的 `GITHUB_TOKEN`，本地也可放在未跟踪的 `.env.local`，以提高请求额度；它只用于构建脚本，不会进入浏览器产物。不要使用 `VITE_GITHUB_TOKEN`。
